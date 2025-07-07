@@ -1,0 +1,104 @@
+#include <LiquidCrystal.h>
+
+// LCD pins: RS, E, D4, D5, D6, D7
+LiquidCrystal lcd(12, 13, 7, 6, 5, 4);
+
+#define led_1 11
+#define led_2 3
+#define led_3 9
+#define led_4 10
+
+const int pir_1 = 2;
+const int pir_2 = 8;
+const int pir_3 = A1;
+
+String lastMessage = ""; // To prevent flickering
+
+void setup() {
+  Serial.begin(9600);
+
+  pinMode(pir_1, INPUT);
+  pinMode(pir_2, INPUT);
+  pinMode(pir_3, INPUT);
+
+  pinMode(led_1, OUTPUT);
+  pinMode(led_2, OUTPUT);
+  pinMode(led_3, OUTPUT);
+  pinMode(led_4, OUTPUT);
+
+  lcd.begin(16, 2);
+  lcd.setCursor(0, 0);
+  lcd.print("System Ready");
+  delay(1000);
+  lcd.clear();
+}
+
+void loop() {
+  int control = analogRead(A0);
+  Serial.println(control);
+
+  if (control > 800) {
+    bool motion1 = digitalRead(pir_1);
+    bool motion2 = digitalRead(pir_2);
+    bool motion3 = digitalRead(pir_3);
+
+    String currentMessage = "";
+
+    if (motion1) {
+      digitalWrite(led_1, HIGH);
+      digitalWrite(led_2, HIGH);
+      currentMessage = "Sensor 1: LED1&2";
+    } else {
+      digitalWrite(led_1, LOW);
+    }
+
+    if (motion2) {
+      digitalWrite(led_2, HIGH);
+      digitalWrite(led_3, HIGH);
+      currentMessage = "Sensor 2: LED2&3";
+    } else {
+      digitalWrite(led_2, LOW);
+    }
+
+    if (motion3) {
+      digitalWrite(led_3, HIGH);
+      digitalWrite(led_4, HIGH);
+      currentMessage = "Sensor 3: LED3&4";
+    } else {
+      digitalWrite(led_3, LOW);
+      digitalWrite(led_4, LOW);
+    }
+
+    if (!motion1 && !motion2 && !motion3) {
+      currentMessage = "No Motion";
+    }
+
+    // Only When update LCD if message is change
+    if (currentMessage != lastMessage) {
+      lcd.clear();
+      lcd.setCursor(0, 0);
+      lcd.print("Motion Status:");
+      lcd.setCursor(0, 1);
+      lcd.print(currentMessage);
+      lastMessage = currentMessage;
+    }
+
+  } else {
+    // System disabled
+    digitalWrite(led_1, LOW);
+    digitalWrite(led_2, LOW);
+    digitalWrite(led_3, LOW);
+    digitalWrite(led_4, LOW);
+
+    if (lastMessage != "Disabled") {
+      lcd.clear();
+      lcd.setCursor(0, 0);
+      lcd.print("System Disabled");
+      lcd.setCursor(0, 1);
+      lcd.print("A0 < 800");
+      lastMessage = "Disabled";
+    }
+  }
+
+  delay(200);
+}
